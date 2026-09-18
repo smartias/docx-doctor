@@ -7,16 +7,24 @@ Weekend 1 actually holding.
 
 ## Weekend 1 — read and write a .docx losslessly
 
-- [ ] Pick a zip library (`fflate` is small and dependency-free; `jszip` is
-      more common and higher-level). Implement `openDocx(buffer)`: unzip,
-      expose parts as a `Map<path, string|Buffer>`.
-- [ ] Implement `doc.save()` / `doc.toBuffer()`: re-zip parts unchanged.
-- [ ] **Round-trip test**: open a real (or synthetic) `.docx`, save it
-      immediately, verify Word/LibreOffice still opens the result and
-      nothing changed. This is the most important test in the whole
-      project — get it green before writing a single rule.
-- [ ] Build 1-2 synthetic, undamaged fixture `.docx` files by hand (a
-      minimal doc saved via Word or LibreOffice) to round-trip against.
+- [x] Pick a zip library — went with `fflate` (small, no transitive deps).
+      `openDocx(buffer)` unzips into `Document.parts: Map<path, Uint8Array>`
+      (`src/zip.js`, `src/document.js`).
+- [x] `doc.save()` / `doc.toBuffer()`: re-zip parts unchanged.
+- [x] **Round-trip test** (`test/round-trip.test.mjs`): open → save →
+      re-open reproduces every part byte-for-byte. Green.
+- [x] Fixture: a hand-authored, spec-correct minimal `.docx`
+      (`fixtures/minimal-docx.mjs`) — heading, body paragraph, a 2-item
+      numbered list, built in code so it's readable/diffable in git.
+- [ ] **Do this manually before Weekend 2**: LibreOffice headless
+      conversion isn't working in the dev sandbox this was scaffolded in
+      (`soffice --convert-to` fails on even a plain .txt — looks like a
+      sandbox restriction, not a docx-doctor problem). Open
+      `fixtures/minimal-docx.mjs`'s output in real Word or LibreOffice on
+      your own machine once, by hand, to confirm it's genuinely valid
+      before trusting it as the base for damaged-template fixtures later.
+      (Quick way to get the bytes: add a one-off script that calls
+      `buildMinimalDocx()` and writes the result to a `.docx` file.)
 
 ## Weekend 2 — first real rule: trailing-blank-pages
 

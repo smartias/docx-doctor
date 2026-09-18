@@ -1,9 +1,13 @@
 /**
  * docx-doctor public API.
  *
- * Nothing below is implemented yet — these are the planned signatures.
- * See ROADMAP.md for the build order (openDocx/save first, then rules).
+ * openDocx/save are real (Weekend 1). scan/fix are still stubs — see
+ * ROADMAP.md Weekend 2 onward.
  */
+
+import { Document } from "./document.js";
+
+export { Document };
 
 /**
  * Parse a .docx (zip of OOXML parts) into an in-memory Document.
@@ -11,7 +15,7 @@
  * @returns {Promise<Document>}
  */
 export async function openDocx(buffer) {
-  throw new Error("openDocx: not implemented yet — see ROADMAP.md Weekend 1");
+  return Document.open(buffer);
 }
 
 /**
@@ -44,11 +48,4 @@ export { RULES } from "./rules/index.js";
  * @property {Object} location - rule-specific (e.g. { paraIndex })
  * @property {string} message
  * @property {boolean} autofixable
- */
-
-/**
- * @typedef {Object} Document
- * @property {Map<string, string|Uint8Array>} parts
- * @property {() => Promise<Uint8Array>} toBuffer
- * @property {(path: string) => Promise<void>} save
  */
