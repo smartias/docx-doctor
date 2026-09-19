@@ -108,16 +108,31 @@ Weekend 1 actually holding.
 - [x] 14/14 tests green — first run, no debugging needed this time
       (Weekend 3's documented mistake was worth writing down).
 
-## Weekend 5 — split-run-risk (linter, no fix) + CLI
+## Weekend 5 — split-run-risk (linter, no fix) + CLI ✅
 
-- [ ] `detect()` only: find tokens/text likely split across multiple
-      `<w:r>` runs (the thing that breaks naive find-replace). No
-      `repair()` — recommend handing this to a templating tool instead.
-- [ ] Build `src/cli.js` for real: `docx-doctor scan <file> [--ci]`,
-      `docx-doctor fix <file> -o <out> [--rules a,b,c]`.
-- [ ] `--ci` flag: nonzero exit code if any `severity: "error"` finding is
-      present — this is what makes it adoptable in someone else's CI
-      pipeline, which is the actual distribution wedge.
+- [x] `detect()` only, no `repair()`: finds `{{TOKEN}}` / `${TOKEN}`-style
+      placeholders whose text is split across multiple `<w:r>` runs, by
+      concatenating each paragraph's run texts with offset tracking and
+      checking whether a token match lands entirely within one run's span.
+      v0 only recognizes those two bracket conventions and only walks
+      `<w:r>` elements that are DIRECT children of the paragraph (a run
+      wrapped in `<w:hyperlink>`/`<w:ins>`/`<w:del>` isn't seen) — both
+      documented as deferred scope, not oversights.
+- [x] `src/cli.js` is real now: `docx-doctor scan <file> [--rules a,b,c]
+      [--ci]` and `docx-doctor fix <file> -o <out> [--rules a,b,c]`.
+- [x] `--ci`: nonzero exit only when an **error**-severity finding is
+      present — confirmed manually that a warn-only result (e.g.
+      trailing-blank-pages) exits 0 even with `--ci`, so this is
+      genuinely CI-adoptable without blocking on cosmetic findings.
+- [x] All 4 built-in rules are implemented as of this weekend, so
+      `scan()`/`fix()` with no `opts.rules` now runs cleanly against
+      everything by default — the stale "pass opts.rules explicitly or
+      it'll throw" caveat from Weekends 2-4 is gone (removed from
+      `src/index.js`'s docstring).
+- [x] `test/cli.test.mjs` drives the CLI as a real subprocess (not just
+      calling its internals) against the existing fixtures — exit codes,
+      `--ci` gating, and a fix-then-rescan-clean round trip.
+- [x] 24/24 tests green.
 
 ## Weekend 6 — polish and ship v0.1.0
 

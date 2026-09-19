@@ -1,11 +1,8 @@
 /**
- * docx-doctor public API.
- *
- * openDocx/save are real (Weekend 1). scan/fix are real as of Weekend 2,
- * but only trailing-blank-pages has a working detect()/repair() so far —
- * the other RULES entries still throw. Pass `opts.rules` explicitly until
- * every built-in rule is implemented (ROADMAP.md), or scan()/fix() with no
- * options will throw on the first unimplemented rule.
+ * docx-doctor public API. As of Weekend 5, every built-in rule in RULES
+ * has a real detect() (split-run-risk is detect-only by design — see its
+ * module docstring), so scan()/fix() with no opts.rules now runs cleanly
+ * against all of them.
  */
 
 import { Document } from "./document.js";
