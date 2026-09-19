@@ -98,3 +98,8 @@ export function attrValue(elementXml, name) {
   const m = elementXml.match(new RegExp(`${name}="([^"]*)"`));
   return m ? m[1] : undefined;
 }
+
+/** Escape text for safe placement inside a <w:t> element. */
+export function xmlEscape(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}

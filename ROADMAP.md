@@ -161,6 +161,52 @@ Weekend 1 actually holding.
       defects (not generic copy). Written in first person as a starting
       draft for you to edit and post wherever, not something to publish
       on your behalf.
+- [x] **Shipped for real, 2026-09-19**: `docx-doctor@0.1.0` is live on npm
+      under the `docxdr` account. Verified two ways, not just trusted:
+      registry lookup confirmed the publish, and `npx docx-doctor@0.1.0
+      scan` against a real fixture in a clean directory (no dev tree)
+      correctly found the defect.
+
+## Weekend 7 — the safe builder (`docx-doctor/build`) ✅
+
+Not in the original 6-weekend plan — added after shipping v0.1.0, once it
+was clear the repair-side knowledge (pPr ordering, numId/abstractNum
+semantics, run-splitting) could just as well *prevent* these defects in a
+new document as detect them in an old one.
+
+- [x] `src/build/skeleton.js`: the minimal valid, empty `.docx` parts —
+      deliberately NOT shared with `fixtures/parts.mjs`, since `fixtures/`
+      is excluded from the npm package and anything published has to live
+      under `src/`. (A DRY merge between the two is possible later; not
+      worth the risk of touching already-passing fixture-dependent tests
+      for this pass.)
+- [x] `src/build/paragraph.js`: `paragraph()` builds `<w:pPr>` children in
+      fixed canonical order with `<w:rPr>` always last — the caller's
+      option order can't affect XML order, so `heading-pPr-order` can't
+      happen through this function. `token()` always becomes one complete
+      run, so `split-run-risk` can't happen either.
+- [x] `src/build/numbering.js`: `allocateList()` always adds a genuinely
+      new abstractNum+num pair; "continue this list" (reuse the returned
+      handle) and "start a new list" (call again) are different operations
+      at the call site, so `numbering-restart`'s accidental-duplicate-numId
+      shape requires a deliberate second call, not a slip.
+- [x] `src/build/document.js`: `BuilderDocument#build()` runs docx-doctor's
+      own `scan()` against what you built and throws if it finds anything
+      — the backstop for `trailing-blank-pages`, the one rule that isn't
+      prevented by construction (nothing stops appending empty paragraphs
+      on purpose). `{ allowFindings: true }` opts out.
+- [x] Published as a subpath export, `docx-doctor/build`, via
+      `package.json`'s `exports` map — same package, not a new one.
+      **Verified for real, not just trusted**: ran `npm pack`, installed
+      the actual tarball into a fresh throwaway project (no access to this
+      repo's `node_modules` or source tree), and imported
+      `docx-doctor/build` from there — confirmed the subpath resolves and
+      a built document round-trips clean before touching the README.
+- [x] `test/build.test.mjs` doesn't just check "no findings" — it also
+      inspects the raw XML directly (rPr is *structurally* last; a token's
+      `{{NAME}}` is *structurally* whole in one `<w:t>`) so the tests prove
+      the mechanism, not just the rule's own opinion of its output.
+- [x] 31/31 tests green (7 new).
 
 ## Explicitly deferred (not v0.1)
 

@@ -1,9 +1,13 @@
 {
   "name": "docx-doctor",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Detect and repair structural defects in real-world Word (.docx) templates.",
   "type": "module",
   "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./build": "./src/build/index.js"
+  },
   "bin": {
     "docx-doctor": "src/cli.js"
   },

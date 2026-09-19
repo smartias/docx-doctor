@@ -71,10 +71,49 @@ Every rule is built to never false-positive on a clean template — each has a
 test proving zero findings on an undamaged fixture, not just that it catches
 the defect it's looking for.
 
+## Building a document from scratch (`docx-doctor/build`)
+
+Everything above repairs an existing file. `docx-doctor/build` is the other
+direction: a small API for constructing a *new* `.docx` where three of the
+four defects above are structurally impossible to produce, not just
+detectable afterward.
+
+```js
+import { createDocument, paragraph, token } from "docx-doctor/build";
+
+const doc = createDocument();                          // a valid, empty .docx
+const scope = doc.numberedList({ format: "decimal" });  // one list definition
+
+doc.append(
+  paragraph({ text: "Scope of Work", bold: true, spacing: { before: 240, after: 120 } }),
+  paragraph({ text: "First deliverable", list: scope }),
+  paragraph({ text: "Second deliverable", list: scope }),   // same handle -> continuous numbering, guaranteed
+  paragraph({ children: ["The project is ", token("PROJECT_NAME"), ", due soon."] }),
+);
+
+const buffer = doc.build();   // runs docx-doctor's own scan() first; throws if it finds anything
+```
+
+- `paragraph()` always places the paragraph-mark `<w:rPr>` last inside
+  `<w:pPr>`, regardless of what order you pass options in — the
+  `heading-pPr-order` bug can't happen through this function.
+- `numberedList()` returns a handle; reusing it keeps a list continuous, and
+  getting a *new* list is a separate, deliberate call — the
+  `numbering-restart` bug (an accidental second `<w:num>` duplicating a
+  list) requires calling `numberedList()` again on purpose, not tripping
+  into it by accident.
+- `token()` always becomes one complete, unsplit run — the only way to
+  actually guarantee `split-run-risk` can't happen, since that rule has no
+  automatic fix.
+- `trailing-blank-pages` isn't preventable by construction (nothing stops
+  you from appending empty paragraphs on purpose) — `build()`'s self-scan
+  is the backstop for that one. Pass `{ allowFindings: true }` to opt out.
+
 ## Status
 
-v0.1.0. All four rules above are real (not stubs), with tests including a
-CLI test that drives the actual subprocess. See `ROADMAP.md` for what's
+v0.1.0. All four scan/fix rules are real (not stubs), with tests including a
+CLI test that drives the actual subprocess, plus `docx-doctor/build` for
+constructing new documents defect-free. See `ROADMAP.md` for what's
 explicitly deferred (multi-section `sectPr`, `startOverride`-only restarts,
 runs wrapped in `<w:hyperlink>`/`<w:ins>`/`<w:del>`) — each one is a
 documented scope decision, not an unknown gap.
