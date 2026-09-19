@@ -1,48 +1,10 @@
-// A minimal, spec-correct .docx built by hand from the OOXML parts a real
-// Word document needs (ECMA-376): content types, the package relationship
-// to the main document part, the document body, styles, and numbering.
-//
-// Built in code rather than committed as a binary so it's readable/diffable
-// in git — the same reasoning behind setty-docx's own test fixture. LibreOffice
-// headless conversion isn't available in this sandbox to auto-verify it
-// opens in a real office suite, so do that manually once, in real Word or
-// LibreOffice, as part of Weekend 1 — see ROADMAP.md.
-import { zipParts } from "../src/zip.js";
-
-const CONTENT_TYPES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-<Default Extension="xml" ContentType="application/xml"/>
-<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
-<Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/>
-</Types>`;
-
-const PACKAGE_RELS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>`;
-
-const DOCUMENT_RELS = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>
-</Relationships>`;
-
-const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-<w:docDefaults><w:rPrDefault><w:rPr><w:sz w:val="22"/></w:rPr></w:rPrDefault></w:docDefaults>
-<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>
-</w:styles>`;
-
-const NUMBERING = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-<w:abstractNum w:abstractNumId="0">
-<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/><w:lvlJc w:val="left"/>
-<w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr></w:lvl>
-</w:abstractNum>
-<w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
-</w:numbering>`;
+// A minimal, spec-correct, undamaged .docx: heading, body paragraph, a
+// 2-item numbered list. Built in code rather than committed as a binary so
+// it's readable/diffable in git — the same reasoning behind setty-docx's
+// own test fixture. LibreOffice headless conversion isn't available in
+// this sandbox to auto-verify it opens in a real office suite, so do that
+// manually once, in real Word or LibreOffice — see ROADMAP.md Weekend 1.
+import { buildDocxFromDocument } from "./parts.mjs";
 
 const DOCUMENT = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -55,16 +17,11 @@ const DOCUMENT = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </w:body>
 </w:document>`;
 
-export const MINIMAL_DOCX_PARTS = {
-  "[Content_Types].xml": CONTENT_TYPES,
-  "_rels/.rels": PACKAGE_RELS,
-  "word/document.xml": DOCUMENT,
-  "word/_rels/document.xml.rels": DOCUMENT_RELS,
-  "word/styles.xml": STYLES,
-  "word/numbering.xml": NUMBERING,
-};
+const { parts, buffer } = buildDocxFromDocument(DOCUMENT);
 
-/** @returns {Uint8Array} a fresh, valid .docx buffer */
+export const MINIMAL_DOCX_PARTS = parts;
+
+/** @returns {Uint8Array} a fresh, valid .docx buffer (same bytes every call) */
 export function buildMinimalDocx() {
-  return zipParts(new Map(Object.entries(MINIMAL_DOCX_PARTS)));
+  return buffer.slice();
 }

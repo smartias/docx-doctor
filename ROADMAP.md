@@ -26,18 +26,28 @@ Weekend 1 actually holding.
       (Quick way to get the bytes: add a one-off script that calls
       `buildMinimalDocx()` and writes the result to a `.docx` file.)
 
-## Weekend 2 — first real rule: trailing-blank-pages
+## Weekend 2 — first real rule: trailing-blank-pages ✅
 
-- [ ] Implement paragraph-walking over `word/document.xml` (find `<w:p>`
-      elements, detect "empty" — no runs with visible text).
-- [ ] `trailing-blank-pages.detect()`: find a run of empty paragraphs
-      immediately before the final `sectPr`.
-- [ ] `trailing-blank-pages.repair()`: remove them.
-- [ ] Build a synthetic fixture with 2-3 trailing blank paragraphs; test
-      that `detect()` finds them and `repair()` removes them without
-      touching anything else.
-- [ ] Wire up `scan()` and `fix()` in `index.js` to actually run rules
-      against a doc (just this one rule for now).
+- [x] Paragraph-walking over `word/document.xml` (`src/xml.js`:
+      `findParagraphs`, `paragraphText`, `isEmptyParagraph`).
+- [x] `trailing-blank-pages.detect()`: finds a run of 2+ empty paragraphs
+      at the end of the body. Deliberately does *not* flag a single
+      trailing empty paragraph — that's normal, not a defect — so it
+      doesn't false-positive on every clean template.
+- [x] `trailing-blank-pages.repair()`: removes them, with a safety rule
+      that never empties the body entirely (leaves the first paragraph
+      behind if the whole body turns out to be empty paragraphs).
+- [x] Fixture (`fixtures/trailing-blanks-docx.mjs`) with 3 trailing empty
+      paragraphs (a self-closing one, a whitespace-only run, another
+      self-closing one) — mirrors real damage, not a toy case.
+      `fixtures/parts.mjs` now holds the shared boilerplate so clean vs.
+      damaged fixtures only differ in `document.xml`.
+- [x] `scan()`/`fix()` wired up in `src/index.js` for real. Note: they
+      still throw if you don't pass `opts.rules` — only
+      trailing-blank-pages is implemented so far; see Weekends 3-5.
+- [x] 8/8 tests green, including a "clean fixture produces zero findings"
+      test (the false-positive check that matters most for this kind of
+      tool) and a degenerate all-empty-body case for the repair safety rule.
 
 ## Weekend 3 — heading-pPr-order
 
