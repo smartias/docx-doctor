@@ -2,9 +2,11 @@ import { Document } from "../document.js";
 import { scan } from "../index.js";
 import { emptyDocumentParts } from "./skeleton.js";
 import { allocateList } from "./numbering.js";
+import { allocateHyperlinkRel } from "./relationships.js";
 
 const DOC_PART = "word/document.xml";
 const NUMBERING_PART = "word/numbering.xml";
+const DOCUMENT_RELS_PART = "word/_rels/document.xml.rels";
 
 function insertBeforeSectPr(bodyXml, insertXml) {
   const idx = bodyXml.indexOf("<w:sectPr");
@@ -40,6 +42,21 @@ export class BuilderDocument {
     const { xml, numId } = allocateList(this.doc.text(NUMBERING_PART), opts);
     this.doc.setText(NUMBERING_PART, xml);
     return { numId };
+  }
+
+  /**
+   * Register an External hyperlink relationship and return a handle to
+   * pass inside paragraph({ children: [...] }). The relationship lives in
+   * word/_rels/document.xml.rels, allocated per-document (like
+   * numberedList()) since relationship ids must be unique within the doc.
+   * @param {string} text - the visible link text
+   * @param {string} url
+   * @returns {{ rId: string, text: string }}
+   */
+  hyperlink(text, url) {
+    const { xml, rId } = allocateHyperlinkRel(this.doc.text(DOCUMENT_RELS_PART), url);
+    this.doc.setText(DOCUMENT_RELS_PART, xml);
+    return { __docxDoctorHyperlink: true, rId, text };
   }
 
   /**

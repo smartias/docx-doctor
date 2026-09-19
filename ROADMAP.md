@@ -208,6 +208,58 @@ new document as detect them in an old one.
       the mechanism, not just the rule's own opinion of its output.
 - [x] 31/31 tests green (7 new).
 
+## Weekend 8 — expand the builder: tables, page breaks, hyperlinks ✅
+
+Chosen deliberately from a short list of candidates (the alternatives were
+verifying CI is actually green, closing a deferred scanner gap, or making
+split-run-risk's token patterns configurable — none picked yet, still
+available for a future weekend).
+
+- [x] `src/build/table.js`: `table({ rows, columnWidths? })` — a `<w:tbl>`
+      from an array of rows; each cell is plain text, a pre-built
+      `paragraph()` (for formatting inside a cell), or an array of either
+      for a multi-paragraph cell.
+- [x] `src/build/paragraph.js`: `paragraph({ pageBreakBefore: true })`,
+      correctly placed ahead of `numPr`/spacing/etc. in `<w:pPr>`'s
+      required child order (not just appended anywhere — CT_PPr actually
+      requires `pageBreakBefore` before `numPr`). Standalone `pageBreak()`
+      for an explicit page-break paragraph.
+- [x] `src/build/relationships.js` + `doc.hyperlink(text, url)`: allocates
+      a real External relationship in `word/_rels/document.xml.rels` and
+      returns a handle usable inside `paragraph({ children: [...] })`.
+      Needed adding the `xmlns:r` namespace to the document root and a
+      `Hyperlink` character style to `skeleton.js` — both missing from the
+      Weekend 7 skeleton since nothing needed them yet.
+- [x] **Found and fixed a real methodology mistake before it shipped**:
+      first draft of the table+trailing-blank-pages interaction test
+      *asserted* the failure mode ("an empty trailing cell trips the
+      self-scan") without running it first. It didn't trip — a single
+      empty trailing cell's non-empty neighbor breaks the 2-paragraph
+      threshold trailing-blank-pages requires. Traced it with a scratch
+      script, found the real trigger (2+ consecutive empty cells, e.g. an
+      entirely empty last row), and corrected both the test and every
+      place that described the limitation (this file, `table()`'s
+      docstring, README) to match what's actually true. The corrected
+      test asserts BOTH the non-triggering case and the triggering one,
+      not just the one that makes a good story.
+- [x] Root cause of that interaction, left unfixed on purpose: the scan
+      rules find `<w:p>` elements with a whole-document text scan (see
+      `findParagraphs()` in `xml.js`) that doesn't know a paragraph is
+      nested inside a table cell rather than the document body. Properly
+      fixing this means teaching the relevant rules to walk only
+      body-level paragraphs (probably via `topLevelElements()` on the
+      `<w:body>` itself, which would naturally exclude anything inside a
+      `<w:tbl>`) — real work, touching already-published, tested rule
+      behavior, and deliberately out of scope for a builder-focused
+      weekend. Good candidate for a future weekend on its own.
+- [x] Verified for real, not just trusted: `npm pack` + fresh install in a
+      throwaway project, then exercised `table()`/`pageBreak()`/
+      `doc.hyperlink()` together from that installed tarball before
+      touching the README.
+- [x] Version bumped to `0.3.0` (another additive, non-breaking API
+      surface, same reasoning as Weekend 7's bump to `0.2.0`).
+- [x] 38/38 tests green (7 new, on top of Weekend 7's 31).
+
 ## Explicitly deferred (not v0.1)
 
 - Templating/fill logic (token replacement, list/block expansion) — stays

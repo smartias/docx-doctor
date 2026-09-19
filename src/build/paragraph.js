@@ -25,8 +25,10 @@ function attrsXml(obj) {
  * bug (something appended after an already-present rPr) can't occur
  * through this function no matter what the caller does.
  */
-function pPrXml({ list, spacing, ind, jc, bold, italic }) {
+function pPrXml({ list, spacing, ind, jc, bold, italic, pageBreakBefore }) {
   const parts = [];
+  // CT_PPr order: pageBreakBefore precedes numPr, which precedes spacing/ind/jc.
+  if (pageBreakBefore) parts.push("<w:pageBreakBefore/>");
   if (list) parts.push(`<w:numPr><w:ilvl w:val="${list.ilvl ?? 0}"/><w:numId w:val="${list.numId}"/></w:numPr>`);
   if (spacing) parts.push(`<w:spacing ${attrsXml(spacing)}/>`);
   if (ind) parts.push(`<w:ind ${attrsXml(ind)}/>`);
@@ -36,6 +38,18 @@ function pPrXml({ list, spacing, ind, jc, bold, italic }) {
   if (rPrInner) parts.push(`<w:rPr>${rPrInner}</w:rPr>`); // always last, see docstring above
 
   return parts.length ? `<w:pPr>${parts.join("")}</w:pPr>` : "";
+}
+
+/**
+ * A standalone page-break paragraph (`<w:br w:type="page"/>` in its own
+ * run). Deliberately recognized as non-empty by trailing-blank-pages'
+ * isEmptyParagraph() check — see xml.js's NON_TEXT_CONTENT_RE — so using
+ * this near the end of a document won't trip build()'s self-scan.
+ * For "start the NEXT paragraph on a new page" instead, use
+ * paragraph({ pageBreakBefore: true, ... }).
+ */
+export function pageBreak() {
+  return `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
 }
 
 /**
@@ -54,27 +68,40 @@ function isToken(x) {
   return x !== null && typeof x === "object" && x.__docxDoctorToken === true;
 }
 
+function isHyperlink(x) {
+  return x !== null && typeof x === "object" && x.__docxDoctorHyperlink === true;
+}
+
+function hyperlinkXml({ rId, text }) {
+  return `<w:hyperlink r:id="${rId}"><w:r><w:rPr><w:rStyle w:val="Hyperlink"/></w:rPr>` +
+    `<w:t xml:space="preserve">${xmlEscape(text)}</w:t></w:r></w:hyperlink>`;
+}
+
 /**
  * Build one <w:p>. Either pass `text` (plus optional `bold`/`italic`) for
  * a single-run paragraph, or `children` — an array of strings, `token()`
- * results, and/or `{ text, bold?, italic? }` objects — for a paragraph
- * made of multiple runs (e.g. a token() embedded mid-sentence).
+ * results, `doc.hyperlink()` results, and/or `{ text, bold?, italic? }`
+ * objects — for a paragraph made of multiple runs (e.g. a token()
+ * embedded mid-sentence, or a hyperlink inline with surrounding text).
  *
  * @param {{
- *   text?: string, children?: Array<string|{text:string,bold?:boolean,italic?:boolean}|ReturnType<typeof token>>,
+ *   text?: string,
+ *   children?: Array<string|{text:string,bold?:boolean,italic?:boolean}|ReturnType<typeof token>|ReturnType<import("./document.js").BuilderDocument["hyperlink"]>>,
  *   bold?: boolean, italic?: boolean,
  *   spacing?: Record<string,string|number>, ind?: Record<string,string|number>, jc?: string,
  *   list?: { numId: string, ilvl?: number },
+ *   pageBreakBefore?: boolean,
  * }} [opts]
  * @returns {string} a complete "<w:p>...</w:p>" element
  */
-export function paragraph({ text, children, bold, italic, spacing, ind, jc, list } = {}) {
-  const pPr = pPrXml({ list, spacing, ind, jc, bold, italic });
+export function paragraph({ text, children, bold, italic, spacing, ind, jc, list, pageBreakBefore } = {}) {
+  const pPr = pPrXml({ list, spacing, ind, jc, bold, italic, pageBreakBefore });
 
   let runs;
   if (children) {
     runs = children.map((child) => {
       if (isToken(child)) return runXml(`{{${child.name}}}`);
+      if (isHyperlink(child)) return hyperlinkXml(child);
       if (typeof child === "string") return runXml(child);
       return runXml(child.text, { bold: child.bold, italic: child.italic });
     }).join("");

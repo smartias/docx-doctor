@@ -79,16 +79,19 @@ four defects above are structurally impossible to produce, not just
 detectable afterward.
 
 ```js
-import { createDocument, paragraph, token } from "docx-doctor/build";
+import { createDocument, paragraph, token, table, pageBreak } from "docx-doctor/build";
 
 const doc = createDocument();                          // a valid, empty .docx
 const scope = doc.numberedList({ format: "decimal" });  // one list definition
+const link = doc.hyperlink("our website", "https://example.com");
 
 doc.append(
   paragraph({ text: "Scope of Work", bold: true, spacing: { before: 240, after: 120 } }),
   paragraph({ text: "First deliverable", list: scope }),
   paragraph({ text: "Second deliverable", list: scope }),   // same handle -> continuous numbering, guaranteed
-  paragraph({ children: ["The project is ", token("PROJECT_NAME"), ", due soon."] }),
+  table({ rows: [["Item", "Price"], ["Widget", "$5"]] }),
+  pageBreak(),
+  paragraph({ children: ["The project is ", token("PROJECT_NAME"), ". See ", link, " for details."] }),
 );
 
 const buffer = doc.build();   // runs docx-doctor's own scan() first; throws if it finds anything
@@ -96,7 +99,8 @@ const buffer = doc.build();   // runs docx-doctor's own scan() first; throws if 
 
 - `paragraph()` always places the paragraph-mark `<w:rPr>` last inside
   `<w:pPr>`, regardless of what order you pass options in — the
-  `heading-pPr-order` bug can't happen through this function.
+  `heading-pPr-order` bug can't happen through this function. Also takes
+  `pageBreakBefore: true`, correctly ordered ahead of `numPr`/spacing/etc.
 - `numberedList()` returns a handle; reusing it keeps a list continuous, and
   getting a *new* list is a separate, deliberate call — the
   `numbering-restart` bug (an accidental second `<w:num>` duplicating a
@@ -105,9 +109,23 @@ const buffer = doc.build();   // runs docx-doctor's own scan() first; throws if 
 - `token()` always becomes one complete, unsplit run — the only way to
   actually guarantee `split-run-risk` can't happen, since that rule has no
   automatic fix.
-- `trailing-blank-pages` isn't preventable by construction (nothing stops
-  you from appending empty paragraphs on purpose) — `build()`'s self-scan
-  is the backstop for that one. Pass `{ allowFindings: true }` to opt out.
+- `table()` builds a `<w:tbl>` from a `rows` array of cells (plain text, a
+  pre-built `paragraph()` for formatting, or an array for multiple
+  paragraphs in one cell). **Known limitation**: 2+ consecutive empty
+  trailing cells (e.g. an entirely empty last row) placed at the very end
+  of the document can trip the `trailing-blank-pages` self-scan in
+  `build()`, since that rule doesn't yet know a paragraph is inside a
+  table cell rather than the body. Workaround (also just normal Word
+  convention): end with a real paragraph after a trailing table.
+- `pageBreak()` is a standalone page-break paragraph, deliberately
+  recognized as non-empty by `trailing-blank-pages` — using it near the
+  end of a document won't trip the self-scan.
+- `doc.hyperlink(text, url)` registers the relationship and returns a
+  handle to drop into `paragraph({ children: [...] })`.
+- `trailing-blank-pages` isn't otherwise preventable by construction
+  (nothing stops you from appending empty paragraphs on purpose) —
+  `build()`'s self-scan is the backstop for that one. Pass
+  `{ allowFindings: true }` to opt out.
 
 ## Status
 

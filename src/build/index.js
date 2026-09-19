@@ -3,4 +3,5 @@
 // aside — see BuilderDocument#build) is made structurally impossible to
 // produce through this API, rather than merely detectable afterward.
 export { createDocument, BuilderDocument } from "./document.js";
-export { paragraph, token } from "./paragraph.js";
+export { paragraph, token, pageBreak } from "./paragraph.js";
+export { table } from "./table.js";
