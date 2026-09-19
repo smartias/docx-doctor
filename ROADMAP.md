@@ -49,17 +49,29 @@ Weekend 1 actually holding.
       test (the false-positive check that matters most for this kind of
       tool) and a degenerate all-empty-body case for the repair safety rule.
 
-## Weekend 3 — heading-pPr-order
+## Weekend 3 — heading-pPr-order ✅
 
-- [ ] Implement `pPr` child-element parsing aware of the paragraph-mark
-      `<w:rPr>` position (ECMA-376 §17.3.1.29 ordering rules).
-- [ ] `detect()`: flag any `pPr` where a spacing/numbering element appears
-      *after* the paragraph-mark `rPr` — Word silently ignores it, which is
-      the concrete, testable failure mode.
-- [ ] `repair()`: reorder elements into valid position (an insert-before-rPr
-      helper, not append-before-close-tag).
-- [ ] Fixture + test proving the Word-visible behavior: a paragraph whose
-      spacing Word would ignore before the fix, correctly ordered after.
+- [x] `pPr` child-element parsing: `topLevelElements()`/`elementInner()`
+      added to `src/xml.js` — generic depth-tracked "walk direct children
+      of any XML fragment" helpers, not paragraph-specific, so Weekend 4
+      (numbering.xml) can reuse them too.
+- [x] `detect()`: flags any `pPr` with elements after the paragraph-mark
+      `<w:rPr>` (ECMA-376 §17.3.1.29) — v0 scope is "is anything after
+      rPr," not full CT_PPr schema ordering, since that's the actual
+      defect naive append-before-close-tag code produces.
+- [x] `repair()`: moves `rPr` to the end, preserves every other child's
+      relative order (tested with 2 trailing elements, not just 1, to
+      prove it doesn't accidentally just swap a pair).
+- [x] Fixture (`fixtures/heading-ppr-order-docx.mjs`) with 5 paragraphs:
+      2 broken (1 and 2 trailing elements), a correctly-ordered one, one
+      with no `rPr` at all, and one with no `pPr` at all — the last three
+      exist specifically to catch false positives.
+- [x] Bug caught by the fixture during development, worth knowing about:
+      `topLevelElements(para.xml)` on a *whole* `<w:p>...</w:p>` string
+      returns `w:p` itself as the only top-level element — you have to
+      unwrap with `elementInner()` first to see `pPr` as a child. Easy
+      mistake to repeat when Weekend 4 walks `numbering.xml`.
+- [x] 11/11 tests green.
 
 ## Weekend 4 — numbering-restart (the hard one)
 
