@@ -1,12 +1,33 @@
 {
   "name": "docx-doctor",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Detect and repair structural defects in real-world Word (.docx) templates.",
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "docx-doctor": "./src/cli.js"
+    "docx-doctor": "src/cli.js"
   },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "docx",
+    "word",
+    "ooxml",
+    "template",
+    "cli",
+    "lint"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smartias/docx-doctor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smartias/docx-doctor/issues"
+  },
+  "homepage": "https://github.com/smartias/docx-doctor#readme",
   "scripts": {
     "test": "node --test"
   },

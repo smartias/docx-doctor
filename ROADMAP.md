@@ -136,12 +136,31 @@ Weekend 1 actually holding.
 
 ## Weekend 6 — polish and ship v0.1.0
 
-- [ ] README examples using the CLI, not just the API.
-- [ ] `npm publish` as `docx-doctor` (check name availability first) or a
-      scoped alternative.
-- [ ] One real write-up: "the four ways your Word template silently
-      breaks." This is the actual distribution mechanism — more than the
-      npm listing itself.
+- [x] README rewritten with real CLI examples (`scan`/`fix`/`--ci`), a
+      table of what each of the 4 rules catches, and an accurate status
+      section — no more "nothing here works yet."
+- [x] `docx-doctor` is unclaimed on npm (confirmed via `npm view` — 404).
+      `package.json` filled in for publishing: version bumped to `0.1.0`,
+      `files` whitelist (just `src/`, README, LICENSE — verified with
+      `npm publish --dry-run`: 14 files, no `test/`/`fixtures/`/`.github/`
+      leaking into the tarball), `repository`/`bugs`/`homepage`,
+      `keywords`. `npm pkg fix` cleaned up a trivial `bin` path warning.
+- [x] **Not done from here, deliberately**: the actual `npm publish` needs
+      your own npm account (`npm login` first if you haven't). Once
+      you're ready:
+      ```
+      npm login
+      npm publish
+      ```
+      `--dry-run` output is already verified clean, so this should just
+      work — but it's a real, public, hard-to-undo action, so it's yours
+      to run, not something to script from a session that isn't logged in
+      as you.
+- [x] Write-up drafted: `WRITEUP.md` — "The four ways your Word template
+      silently breaks," one section per rule, grounded in the real
+      defects (not generic copy). Written in first person as a starting
+      draft for you to edit and post wherever, not something to publish
+      on your behalf.
 
 ## Explicitly deferred (not v0.1)
 
