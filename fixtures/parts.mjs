@@ -39,15 +39,23 @@ export const NUMBERING = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?
 <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
 </w:numbering>`;
 
-/** @param {string} documentXml @returns {{ parts: Record<string,string>, buffer: Uint8Array }} */
-export function buildDocxFromDocument(documentXml) {
+/**
+ * @param {{ documentXml: string, numberingXml?: string }} opts
+ * @returns {{ parts: Record<string,string>, buffer: Uint8Array }}
+ */
+export function buildDocx({ documentXml, numberingXml = NUMBERING }) {
   const parts = {
     "[Content_Types].xml": CONTENT_TYPES,
     "_rels/.rels": PACKAGE_RELS,
     "word/document.xml": documentXml,
     "word/_rels/document.xml.rels": DOCUMENT_RELS,
     "word/styles.xml": STYLES,
-    "word/numbering.xml": NUMBERING,
+    "word/numbering.xml": numberingXml,
   };
   return { parts, buffer: zipParts(new Map(Object.entries(parts))) };
+}
+
+/** @param {string} documentXml @returns {{ parts: Record<string,string>, buffer: Uint8Array }} */
+export function buildDocxFromDocument(documentXml) {
+  return buildDocx({ documentXml });
 }

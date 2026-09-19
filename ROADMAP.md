@@ -73,19 +73,40 @@ Weekend 1 actually holding.
       mistake to repeat when Weekend 4 walks `numbering.xml`.
 - [x] 11/11 tests green.
 
-## Weekend 4 — numbering-restart (the hard one)
+## Weekend 4 — numbering-restart (the hard one) ✅
 
-- [ ] Parse `word/numbering.xml`: the `abstractNum` / `num` mapping.
-- [ ] `detect()`: find lists that restart numbering (`numId` change or
-      `startOverride`) mid-section where the surrounding paragraphs are
-      stylistically the same list.
-- [ ] `repair()`: point the restarted paragraphs back at the original
-      `numId`.
-- [ ] Fixture covering at least 2 restart shapes (new `numId` vs.
-      `startOverride`).
-- [ ] This rule will likely need a second pass later — real templates vary
-      a lot here. Don't aim for perfect; aim for "flags the obvious cases,
-      never false-positives on a clean list."
+- [x] `src/numbering.js`: `parseNumbering()` maps `numId -> { abstractNumId,
+      overrides }` from `word/numbering.xml`. Reused `topLevelElements()`/
+      `elementInner()` from Weekend 3 without hitting the same unwrap
+      mistake this time — the note in the Weekend 3 section paid off.
+- [x] `detect()`: groups consecutive list paragraphs into runs, and within
+      each run flags any block whose `numId` differs from the run's first
+      ("canonical") `numId` but resolves to the *same* `abstractNumId` —
+      a second `<w:num>` pointing at the same list definition, which is
+      what actually causes Word to restart the count in practice. **Scope
+      decision**: this fires whether or not there's an explicit
+      `startOverride` — a numId switch alone is enough, since each numId
+      tracks its own counter regardless. A `numId` switch to a
+      *different* `abstractNumId` (a real list-type change) is never
+      flagged — that's the false-positive guard.
+- [x] `repair()`: retargets every paragraph in the flagged block back to
+      the run's canonical `numId`, right-to-left so length-changing edits
+      (e.g. numId "10" → "2") never invalidate not-yet-processed offsets.
+- [x] Fixture (`fixtures/numbering-restart-docx.mjs`) with 2 abstractNums
+      and 3 `num` entries: a canonical list, a restarted duplicate
+      (same abstractNumId as canonical — this is the shape that actually
+      matters), a genuinely different list type (must NOT be flagged),
+      and a lone single-item "run" after a paragraph break (too short to
+      compare against anything — must NOT be flagged). `fixtures/parts.mjs`
+      gained `buildDocx({ documentXml, numberingXml })` so a fixture can
+      override numbering.xml instead of only document.xml.
+- [x] Explicit `startOverride`-only restarts (no numId change, just an
+      override resetting an otherwise-identical numId) are NOT handled —
+      genuinely deferred, not silently missed: real templates seen so far
+      only exhibited the numId-duplication shape. Revisit if a real
+      template surfaces the other one.
+- [x] 14/14 tests green — first run, no debugging needed this time
+      (Weekend 3's documented mistake was worth writing down).
 
 ## Weekend 5 — split-run-risk (linter, no fix) + CLI
 

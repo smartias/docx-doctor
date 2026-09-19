@@ -92,3 +92,9 @@ export function elementInner(elementXml) {
   const closeStart = elementXml.lastIndexOf("<");
   return elementXml.slice(openEnd, closeStart);
 }
+
+/** An attribute value from an element's opening tag, e.g. attrValue(el, "w:val"). */
+export function attrValue(elementXml, name) {
+  const m = elementXml.match(new RegExp(`${name}="([^"]*)"`));
+  return m ? m[1] : undefined;
+}
